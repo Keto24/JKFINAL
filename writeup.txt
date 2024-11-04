@@ -1,0 +1,191 @@
+1. 2. Assignment 6 write up
+Test 1 : . The output of your program on the test sentences for 10 iterations and probability threshold of 0.
+
+NULL bleu 0.0019686146175732742
+NULL fleur 0.0020207118299371244
+NULL la 0.8370632188131021
+NULL maison 0.15894745473938757
+blue bleu 0.962387376119947
+blue la 0.003397040269852973
+blue maison 0.03421558361019996
+flower fleur 0.9894088555848314
+flower la 0.010591144415168686
+house bleu 0.011408326846222632
+house la 0.067474609989119
+house maison 0.9211170631646585
+the bleu 0.0019686146175732742
+the fleur 0.0020207118299371244
+the la 0.8370632188131021
+the maison 0.15894745473938757
+
+
+We observed that the Word Aligner accurately identified strong alignments between 
+English and French words. For instance, "blue" aligns with "bleu" with a high
+probability of approximately 0.96, and "house" aligns with "maison" with a
+probability of around 0.92, both of which are correct translations. The NULL token
+captures some of the foreign words with very low probability but our model still
+manages to match the rest of the words correctly with high probability. Additionally,
+less meaningful alignments, such as "house" ↔ "bleu" with a low probability of 0.01,
+reflect the model's ability to assign low probabilities to incorrect translations.
+
+
+Test 2: Run your program on the en-es data set with 10K sentence pairs (remember
+your commandline friend head) for 10 iterations and probability threshold of 0.3.
+
+
+stone acuña 0.3477579808846402
+h-0782/99 h-0782/99 0.32351487930600903
+bowis bowis 0.38470020666167243
+act actuar 0.3010494117588172
+' " 0.3957882724132831
+recommendations recomendaciones 0.7741056052301041
+liability responsabilidad 0.8546834690185275
+golan golán 0.6528353000954309
+everywhere partes 0.4801594373135182
+benefited beneficiado 0.3742843457398321
+legislative legislativo 0.45004857416040506
+idea idea 0.88049261313056
+thinking pienso 0.3216633892708062
+white libro 0.43749657286502264
+50 50 0.899532645215279
+urban urban 0.6854415252313891
+third terceros 0.32542476362960754
+elsewhere otros 0.31022872617181824
+contractual contrato 0.38676136145113094
+spain españa 0.7354085273495543
+
+
+Using an online translation service, we verified the correctness of the 20 randomly
+selected alignments between English and Spanish words. Overall, many translations
+were accurate with high probabilities assigned to them, especially for nouns and
+straightforward terms like "recommendations - recomendaciones" and "liability -
+responsabilidad," indicating strong performance for direct and cognate translations.
+However, some alignments, such as "white - libro" (where "white" should translate to
+"blanco") and "elsewhere - otros" (where "elsewhere" translates more accurately to
+"en otra parte"), showed significant errors. Punctuation and number handling also
+presented minor inconsistencies. We hypothesise that these anomalies could indicate
+that while our model performs well on simple terms, it struggles with contextually
+dependent words and punctuation, or that additional iterations may be needed for
+these anomalies to be corrected.
+
+passionately defiendo 0.334971474959128
+passionately intensamente 0.334971474959128
+past pasado 0.633779639690253
+path camino 0.490565536235927
+patten patten 0.746681364989759
+patten' patten 0.321297604634540
+pay pagar 0.370517948014056
+payments pagos 0.437022808953414
+peace paz 0.955234046803372
+peaceful pacífica 0.351298793854613
+peat turba 0.493685083409014
+peijs peijs 0.373898120721510
+peking pekín 0.374261029555422
+peninsula península 0.321975578190490
+people personas 0.342563955253031
+people' popular 0.501616569391249
+people's popular 0.347190365452931
+peoples pueblos 0.795280793713202
+per por 0.647810455801818
+perhaps quizá 0.364440908632361
+period período 0.609770304476401
+periodic periódico 0.493597886991705
+peripheral periféricas 0.319210402270131
+periphery periferia 0.352004902403088
+permanent permanente 0.383413646837886
+perpetrators causantes 0.356589384111940
+persistent persistentes 0.338304076701999
+person persona 0.483668375351204
+personal personal 0.394600206861197
+personalities personalidades 0.609055304893055
+personally personalmente 0.688468716689573
+personnel personal 0.435585973154513
+persons personas 0.532828619672741
+perspectives financieras 0.300604703388076
+perspectives perspectivas 0.421443696514749
+phare phare 0.702563700889778
+phase fase 0.563962944373576
+philosophy filosofía 0.469655433096446
+pillar pilar 0.572030455124641
+pilot piloto 0.531883615160025
+pinochet pinochet 0.528811726797443
+pirates piratas 0.312139234501737
+pity pena 0.307139924749736
+place lugar 0.305245168892306
+plague peste 0.493538128149121
+plan plan 0.639386883485667
+plans planes 0.647640397738200
+plant central 0.572548623550165
+plastic plástico 0.312499406694808
+play desempeñar 0.435331265574607
+played desempeñado 0.379903154236926
+pleasure placer 0.335470655656581
+pledges promesas 0.334832750828634
+plenary pleno 0.662513492168859
+poettering poettering 0.638262355400801
+point punto 0.508191225101446
+points puntos 0.633916700797822
+police policía 0.674262419435718
+policies políticas 0.861701462616542
+policy política 0.947331888363679
+political política 0.391589698443225
+political político 0.367176585067520
+politically políticamente 0.666972294509650
+politicians políticos 0.478277070400003
+politics política 0.890298320266262
+polluter contamina 0.433450914882231
+polluting contaminantes 0.425313489362298
+pollution contaminación 0.784121785937399
+poor pobres 0.465568390943645
+poorest más 0.457888448906833
+poorest pobres 0.473632100874829
+populated periféricas 0.365818099447136
+populated pobladas 0.366910609054578
+population población 0.816820492847222
+populations poblaciones 0.323353794345581
+populations población 0.318105937336419
+populism populismo 0.709275664548762
+port puerto 0.331401115200887
+ports puertos 0.618159203566467
+portugal portugal 0.861691285506938
+portuguese portuguesa 0.838897296673579
+position posición 0.801951540838683
+positions posiciones 0.592713579189902
+positive positiva 0.305882910598451
+positive positivo 0.329852611736060
+positively forma 0.329746935993371
+positively positiva 0.340745830340475
+possibilities posibilidades 0.418287272453890
+possibility posibilidad 0.932474441519510
+possible posible 0.603948456004267
+posting desplazamiento 0.500650670477268
+potential potencial 0.563677656078399
+pounds libras 0.354989055598950
+poverty pobreza 0.926153461131277
+power poder 0.626029104766750
+
+
+
+
+3. Writeup for Part 2, showing the results of your program addition. Note this will be different
+depending on what extension option you choose.
+
+createWordMapping method in the WordAligner.java generates a unique integer ID for each word 
+minimizing memory usage. It filters words per minimum frequency.
+
+Test 1: Output with Probability Threshold of 0
+
+
+
+# Analysis
+The output demonstrates a high accuracy for straightforward 
+translations, with words like "policy" aligning with "política" (0.94) 
+and "poverty" with "pobreza" (0.92). This makes sense, as these are 
+exact translations with high frequencies in the dataset, which reinforces 
+the model’s ability to capture common pairs. There are also cases where 
+the alignment probability is lower, such as "play" with "desempeñar" (0.43), 
+which makes sense as "play" has multiple meanings that may not directly 
+translate to "desempeñar." This ambiguity in word meaning highlights the model's
+ limitations in handling context-dependent words. Additionally, we observe lower 
+ probabilities for less common words or for words with multiple translation options, 
+ indicating that the model correctly assigns lower confidence to less reliable translations.

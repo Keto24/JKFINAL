@@ -1,6 +1,8 @@
-#! /bin/bash
+#!/bin/bash
 
-# This is just an example for Java.  You'll need to modify it for your package structure
-# and names.  See the last assignment for more examples.
-javac nlp/mt/*.java
-java -Xmx2G -cp . nlp.mt.WordAligner $1 $2 $3 $4
+# Compile the Java files in the 'code/nlp/mt' directory
+javac code/nlp/mt/*.java
+
+# Run the WordAligner class with the full package name and specified memory
+# The classpath includes 'code' since the script is now in 'code' instead of 'mt'
+java -Xmx2G -cp code code.nlp.mt.WordAligner "$1" "$2" "$3" "$4" "$5" "$6"
