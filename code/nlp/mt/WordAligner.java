@@ -1,14 +1,10 @@
 package code.nlp.mt;
 
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-
-/*
- * @Author Jerry Onyango, Keto Etefa
- * 
- */
 
 /**
  * IBM Model 1 Word Aligner with NULL Alignment, Memory Efficiency, and Alignment Calculation
@@ -43,7 +39,6 @@ public class WordAligner {
         List<IntSentencePair> intSentencePairs = convertToIntegerPairs(sentencePairs, wordToId);
 
         // Initialize p(f|e) with integer mappings
-
         Map<Integer, Map<Integer, Double>> pFe = initializePFWithNull(intSentencePairs);
         pFe = performEM(intSentencePairs, pFe, iterations);
 
@@ -57,11 +52,6 @@ public class WordAligner {
 
     /**
      * Step 1: Create a word-to-integer mapping with frequency-based filtering.
-     * This ensures that only words with a minimum frequency are included in the mapping.
-     * This step also includes the NULL token for unaligned words.
-     * @param sentencePairs List of sentence pairs
-     * @param minFrequency Minimum frequency threshold for word inclusion
-     * @return Map of words to integer IDs
      */
     private static Map<String, Integer> createWordMapping(List<SentencePair> sentencePairs, int minFrequency) {
         Map<String, Integer> wordToId = new HashMap<>();
@@ -87,10 +77,6 @@ public class WordAligner {
 
     /**
      * Reverse the word-to-integer mapping for easy lookup when printing.
-     * This is used to convert integer IDs back to words for output.
-     * This is necessary for both English and Foreign words.
-     * @param wordToId Mapping of words to integer IDs
-     * @return Reverse mapping of integer IDs to words
      */
     private static Map<Integer, String> reverseMapping(Map<String, Integer> wordToId) {
         Map<Integer, String> idToWord = new HashMap<>();
@@ -102,10 +88,6 @@ public class WordAligner {
 
     /**
      * Convert sentences to integer pairs using the word mapping.
-     * This ensures that only words in the mapping are included in the integer pairs.
-     * @param sentencePairs List of sentence pairs
-     * @param wordToId Mapping of words to integer IDs
-     * @return List of integer-based sentence pairs
      */
     private static List<IntSentencePair> convertToIntegerPairs(List<SentencePair> sentencePairs, Map<String, Integer> wordToId) {
         List<IntSentencePair> intPairs = new ArrayList<>();
@@ -132,10 +114,6 @@ public class WordAligner {
 
     /**
      * Read sentences and add NULL token to English words for alignment.
-     * This ensures that foreign words can align to a special NULL token.
-     * @param engFile Path to English sentences file
-     * @param forwFile Path to Foreign sentences file
-     * @return List of sentence pairs with NULL token
      */
     private static List<SentencePair> readSentencesWithNull(String engFile, String forwFile) {
         List<SentencePair> pairs = new ArrayList<>();
@@ -160,9 +138,6 @@ public class WordAligner {
 
     /**
      * Initialize p(f|e) with integer mappings.
-     * 
-     * @param sentencePairs List of integer-based sentence pairs
-     * @return Initial p(f|e) probabilities
      */
     private static Map<Integer, Map<Integer, Double>> initializePFWithNull(List<IntSentencePair> sentencePairs) {
         Map<Integer, Set<Integer>> eToF = new HashMap<>();
@@ -189,10 +164,6 @@ public class WordAligner {
 
     /**
      * Perform EM algorithm on integer-based sentences.
-     * @param sentencePairs List of integer-based sentence pairs
-     * @param pFe Initial p(f|e) probabilities
-     * @param iterations Number of EM iterations
-     * @return Updated p(f|e) probabilities
      */
     private static Map<Integer, Map<Integer, Double>> performEM(List<IntSentencePair> sentencePairs, Map<Integer, Map<Integer, Double>> pFe, int iterations) {
         for (int it = 1; it <= iterations; it++) {
@@ -234,10 +205,6 @@ public class WordAligner {
 
     /**
      * Print the p(f|e) probability table.
-     * @param pFe Trained p(f|e) probabilities
-     * @param threshold Probability threshold for filtering
-     * @param idToWord Reverse mapping for converting integer IDs to words
-     * @return void
      */
     private static void printProbabilityTable(Map<Integer, Map<Integer, Double>> pFe, Map<Integer, String> idToWord, double threshold) {
         List<ProbabilityEntry> outputEntries = new ArrayList<>();
@@ -257,11 +224,6 @@ public class WordAligner {
 
     /**
      * Calculate and print alignments for sentence pairs.
-     * @param sentencePairs List of integer-based sentence pairs
-     * @param pFe Trained p(f|e) probabilities
-     * @param threshold Probability threshold for alignment
-     * @param idToWord Reverse mapping for converting integer IDs to words
-     * @return void
      */
     private static void calculateAlignments(List<IntSentencePair> sentencePairs, Map<Integer, Map<Integer, Double>> pFe, double threshold, Map<Integer, String> idToWord) {
         for (IntSentencePair pair : sentencePairs) {
@@ -292,32 +254,29 @@ public class WordAligner {
         }
     }
 
-    /*
-     * Represents a pair of English and Foreign sentences as sets of words.
-     */
-    static class IntSentencePair { // Integer-based sentence pair
+    static class IntSentencePair {
         Set<Integer> englishWords;
         Set<Integer> foreignWords;
 
-        IntSentencePair(Set<Integer> eng, Set<Integer> forw) { // Constructor to initialize the integer-based pair
+        IntSentencePair(Set<Integer> eng, Set<Integer> forw) {
             this.englishWords = eng;
             this.foreignWords = forw;
         }
     }
 
-    static class ProbabilityEntry implements Comparable<ProbabilityEntry> { // Comparable interface for sorting
+    static class ProbabilityEntry implements Comparable<ProbabilityEntry> {
         String englishWord;
         String foreignWord;
         double probability;
 
-        ProbabilityEntry(String e, String f, double p) { // Constructor to initialize the probability entry
+        ProbabilityEntry(String e, String f, double p) {
             this.englishWord = e;
             this.foreignWord = f;
             this.probability = p;
         }
 
         @Override
-        public int compareTo(ProbabilityEntry other) { // Compare based on English word, then Foreign word
+        public int compareTo(ProbabilityEntry other) {
             int cmp = this.englishWord.compareTo(other.englishWord);
             return cmp != 0 ? cmp : this.foreignWord.compareTo(other.foreignWord);
         }
