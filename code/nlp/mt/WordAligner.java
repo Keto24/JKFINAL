@@ -198,7 +198,7 @@ public class WordAligner {
                 }
             }
 
-            System.out.println("Iteration " + it + " completed.");
+           //System.out.println("Iteration " + it + " completed."); // Progress indicator
         }
         return pFe;
     }
