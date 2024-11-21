@@ -1,16 +1,15 @@
 package code.nlp.mt;
 
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
 /**
- * IBM Model 1 Word Aligner with NULL Alignment, Memory Efficiency, and Alignment Calculation
+ * IBM Model 2 Word Aligner with Position-Based Alignment Probabilities, Memory Efficiency, and Alignment Calculation
  * 
  * Usage:
- * java WordAligner <english_sentences> <foreign_sentences> <iterations> <probability_threshold> [<min_frequency>] [--align]
+ * java code.nlp.mt.WordAligner <english_sentences> <foreign_sentences> <iterations> <probability_threshold> [<min_frequency>] [--align]
  */
 public class WordAligner {
 
@@ -19,7 +18,7 @@ public class WordAligner {
 
     public static void main(String[] args) {
         if (args.length < 4) {
-            System.err.println("Usage: java WordAligner <english_sentences> <foreign_sentences> <iterations> <probability_threshold> [<min_frequency>] [--align]");
+            System.err.println("Usage: java code.nlp.mt.WordAligner <english_sentences> <foreign_sentences> <iterations> <probability_threshold> [<min_frequency>] [--align]");
             System.exit(1);
         }
 
@@ -32,26 +31,60 @@ public class WordAligner {
             calculateAlignments = true;
         }
 
+        // Step 1: Read and preprocess sentences
         List<SentencePair> sentencePairs = readSentencesWithNull(englishFile, foreignFile);
+
+        // Step 2: Create word mappings with frequency filtering
         Map<String, Integer> wordToId = createWordMapping(sentencePairs, minFrequency);
         Map<Integer, String> idToWord = reverseMapping(wordToId); // Reverse mapping for easy lookup
 
+        // Step 3: Convert sentences to integer pairs for efficiency
         List<IntSentencePair> intSentencePairs = convertToIntegerPairs(sentencePairs, wordToId);
 
-        // Initialize p(f|e) with integer mappings
+        // Step 4: Initialize p(f|e) with integer mappings
         Map<Integer, Map<Integer, Double>> pFe = initializePFWithNull(intSentencePairs);
-        pFe = performEM(intSentencePairs, pFe, iterations);
 
-        // Print the probability table if alignment mode is off
+        // Step 5: Initialize a(j|i, l_e, l_f) alignment probabilities
+        AlignmentProbabilities aJifef = initializeA(intSentencePairs);
+
+        // Step 6: Perform EM Algorithm for IBM Model 2
+        pFe = performEMModel2(intSentencePairs, pFe, aJifef, iterations);
+
+        // Step 7: Output results based on the flag
         if (!calculateAlignments) {
             printProbabilityTable(pFe, idToWord, probThreshold);
         } else {
-            calculateAlignments(intSentencePairs, pFe, probThreshold, idToWord);
+            calculateAlignments(intSentencePairs, pFe, aJifef, probThreshold, idToWord);
         }
     }
 
     /**
-     * Step 1: Create a word-to-integer mapping with frequency-based filtering.
+     * Step 1: Read sentences and add NULL token to English words for alignment.
+     * Modified to store ordered lists instead of sets.
+     */
+    private static List<SentencePair> readSentencesWithNull(String engFile, String forwFile) {
+        List<SentencePair> pairs = new ArrayList<>();
+        try (BufferedReader engReader = new BufferedReader(new FileReader(engFile));
+             BufferedReader forwReader = new BufferedReader(new FileReader(forwFile))) {
+
+            String engLine;
+            String forwLine;
+            while ((engLine = engReader.readLine()) != null && (forwLine = forwReader.readLine()) != null) {
+                List<String> engWords = new ArrayList<>(Arrays.asList(engLine.trim().split("\\s+")));
+                engWords.add(0, NULL_TOKEN); // Add NULL token at the beginning for alignment
+
+                List<String> forwWords = new ArrayList<>(Arrays.asList(forwLine.trim().split("\\s+")));
+                pairs.add(new SentencePair(engWords, forwWords));
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading input files: " + e.getMessage());
+            System.exit(1);
+        }
+        return pairs;
+    }
+
+    /**
+     * Step 2: Create a word-to-integer mapping with frequency-based filtering.
      */
     private static Map<String, Integer> createWordMapping(List<SentencePair> sentencePairs, int minFrequency) {
         Map<String, Integer> wordToId = new HashMap<>();
@@ -76,7 +109,7 @@ public class WordAligner {
     }
 
     /**
-     * Reverse the word-to-integer mapping for easy lookup when printing.
+     * Step 2: Reverse the word-to-integer mapping for easy lookup when printing.
      */
     private static Map<Integer, String> reverseMapping(Map<String, Integer> wordToId) {
         Map<Integer, String> idToWord = new HashMap<>();
@@ -87,14 +120,14 @@ public class WordAligner {
     }
 
     /**
-     * Convert sentences to integer pairs using the word mapping.
+     * Step 3: Convert sentences to integer pairs using the word mapping.
      */
     private static List<IntSentencePair> convertToIntegerPairs(List<SentencePair> sentencePairs, Map<String, Integer> wordToId) {
         List<IntSentencePair> intPairs = new ArrayList<>();
 
         for (SentencePair pair : sentencePairs) {
-            Set<Integer> engIds = new HashSet<>();
-            Set<Integer> forIds = new HashSet<>();
+            List<Integer> engIds = new ArrayList<>();
+            List<Integer> forIds = new ArrayList<>();
 
             for (String e : pair.englishWords) {
                 Integer id = wordToId.get(e);
@@ -113,31 +146,7 @@ public class WordAligner {
     }
 
     /**
-     * Read sentences and add NULL token to English words for alignment.
-     */
-    private static List<SentencePair> readSentencesWithNull(String engFile, String forwFile) {
-        List<SentencePair> pairs = new ArrayList<>();
-        try (BufferedReader engReader = new BufferedReader(new FileReader(engFile));
-             BufferedReader forwReader = new BufferedReader(new FileReader(forwFile))) {
-
-            String engLine;
-            String forwLine;
-            while ((engLine = engReader.readLine()) != null && (forwLine = forwReader.readLine()) != null) {
-                Set<String> engWords = new HashSet<>(Arrays.asList(engLine.trim().split("\\s+")));
-                engWords.add(NULL_TOKEN); // Add NULL token for unaligned words
-
-                Set<String> forwWords = new HashSet<>(Arrays.asList(forwLine.trim().split("\\s+")));
-                pairs.add(new SentencePair(engWords, forwWords));
-            }
-        } catch (IOException e) {
-            System.err.println("Error reading input files: " + e.getMessage());
-            System.exit(1);
-        }
-        return pairs;
-    }
-
-    /**
-     * Initialize p(f|e) with integer mappings.
+     * Step 4: Initialize p(f|e) with integer mappings.
      */
     private static Map<Integer, Map<Integer, Double>> initializePFWithNull(List<IntSentencePair> sentencePairs) {
         Map<Integer, Set<Integer>> eToF = new HashMap<>();
@@ -163,48 +172,94 @@ public class WordAligner {
     }
 
     /**
-     * Perform EM algorithm on integer-based sentences.
+     * Step 5: Initialize a(j|i, l_e, l_f) uniformly.
      */
-    private static Map<Integer, Map<Integer, Double>> performEM(List<IntSentencePair> sentencePairs, Map<Integer, Map<Integer, Double>> pFe, int iterations) {
+    private static AlignmentProbabilities initializeA(List<IntSentencePair> sentencePairs) {
+        AlignmentProbabilities aJifef = new AlignmentProbabilities();
+
+        for (IntSentencePair pair : sentencePairs) {
+            int l_e = pair.englishWords.size();
+            int l_f = pair.foreignWords.size();
+
+            for (int j = 0; j < l_f; j++) { // Target word positions
+                for (int i = 0; i < l_e; i++) { // Source word positions
+                    aJifef.incrementCount(i, j, l_e, l_f, 1.0); // Initialize to uniform
+                }
+            }
+        }
+
+        // Normalize a(j|i, l_e, l_f)
+        aJifef.normalize();
+        return aJifef;
+    }
+
+    /**
+     * Step 6: Perform EM algorithm for IBM Model 2.
+     */
+    private static Map<Integer, Map<Integer, Double>> performEMModel2(List<IntSentencePair> sentencePairs,
+                                                                       Map<Integer, Map<Integer, Double>> pFe,
+                                                                       AlignmentProbabilities aJifef,
+                                                                       int iterations) {
         for (int it = 1; it <= iterations; it++) {
+            // Initialize count dictionaries
             Map<Integer, Map<Integer, Double>> countEF = new HashMap<>();
-            Map<Integer, Double> countE = new HashMap<>();
+            AlignmentProbabilities countA = new AlignmentProbabilities();
 
             for (IntSentencePair pair : sentencePairs) {
-                for (Integer f : pair.foreignWords) {
+                int l_e = pair.englishWords.size();
+                int l_f = pair.foreignWords.size();
+
+                for (int j = 0; j < l_f; j++) { // Target word positions
+                    Integer f = pair.foreignWords.get(j);
                     double totalProb = 0.0;
 
-                    for (Integer e : pair.englishWords) {
-                        totalProb += pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0);
+                    // Calculate total probability for normalization
+                    for (int i = 0; i < l_e; i++) { // Source word positions
+                        Integer e = pair.englishWords.get(i);
+                        double p_f_e = pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0);
+                        double a_j_i_l_e_l_f = aJifef.getProbability(i, j, l_e, l_f);
+                        totalProb += p_f_e * a_j_i_l_e_l_f;
                     }
 
                     if (totalProb == 0.0) continue;
 
-                    for (Integer e : pair.englishWords) {
-                        double prob = pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0) / totalProb;
-                        countEF.computeIfAbsent(e, k -> new HashMap<>()).put(f, countEF.getOrDefault(e, new HashMap<>()).getOrDefault(f, 0.0) + prob);
-                        countE.put(e, countE.getOrDefault(e, 0.0) + prob);
+                    // Collect expected counts
+                    for (int i = 0; i < l_e; i++) {
+                        Integer e = pair.englishWords.get(i);
+                        double p_f_e = pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0);
+                        double a_j_i_l_e_l_f = aJifef.getProbability(i, j, l_e, l_f);
+                        double delta = (p_f_e * a_j_i_l_e_l_f) / totalProb;
+
+                        // Update countEF
+                        countEF.computeIfAbsent(e, key -> new HashMap<>()).put(f,
+                                countEF.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0) + delta);
+
+                        // Update countA
+                        countA.incrementCount(i, j, l_e, l_f, delta);
                     }
                 }
             }
 
-            for (Integer e : pFe.keySet()) {
-                Map<Integer, Double> fProbMap = pFe.get(e);
-                for (Integer f : fProbMap.keySet()) {
-                    if (countE.get(e) > 0) {
-                        double newProb = countEF.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0) / countE.get(e);
-                        fProbMap.put(f, newProb);
-                    }
+            // Update p(f|e)
+            for (Integer e : countEF.keySet()) {
+                double total = countEF.get(e).values().stream().mapToDouble(Double::doubleValue).sum();
+                for (Integer f : countEF.get(e).keySet()) {
+                    double newProb = countEF.get(e).get(f) / total;
+                    pFe.get(e).put(f, newProb);
                 }
             }
 
-           //System.out.println("Iteration " + it + " completed."); // Progress indicator
+            // Update a(j|i, l_e, l_f)
+            aJifef = countA;
+            aJifef.normalize();
+
+            System.out.println("Iteration " + it + " completed.");
         }
         return pFe;
     }
 
     /**
-     * Print the p(f|e) probability table.
+     * Step 7: Print the p(f|e) probability table.
      */
     private static void printProbabilityTable(Map<Integer, Map<Integer, Double>> pFe, Map<Integer, String> idToWord, double threshold) {
         List<ProbabilityEntry> outputEntries = new ArrayList<>();
@@ -223,42 +278,58 @@ public class WordAligner {
     }
 
     /**
-     * Calculate and print alignments for sentence pairs.
+     * Step 7: Calculate and print alignments for sentence pairs using IBM Model 2 probabilities.
      */
-    private static void calculateAlignments(List<IntSentencePair> sentencePairs, Map<Integer, Map<Integer, Double>> pFe, double threshold, Map<Integer, String> idToWord) {
+    private static void calculateAlignments(List<IntSentencePair> sentencePairs,
+                                           Map<Integer, Map<Integer, Double>> pFe,
+                                           AlignmentProbabilities aJifef,
+                                           double threshold,
+                                           Map<Integer, String> idToWord) {
         for (IntSentencePair pair : sentencePairs) {
+            int l_e = pair.englishWords.size();
+            int l_f = pair.foreignWords.size();
+
             System.out.println("Sentence pair alignment:");
-            for (Integer f : pair.foreignWords) {
+            for (int j = 0; j < l_f; j++) { // Target word positions
+                Integer f = pair.foreignWords.get(j);
                 Integer bestE = -1;
                 double bestProb = threshold;
-                for (Integer e : pair.englishWords) {
-                    double prob = pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0);
+
+                for (int i = 0; i < l_e; i++) { // Source word positions
+                    Integer e = pair.englishWords.get(i);
+                    double p_f_e = pFe.getOrDefault(e, Collections.emptyMap()).getOrDefault(f, 0.0);
+                    double a_j_i_l_e_l_f = aJifef.getProbability(i, j, l_e, l_f);
+                    double prob = p_f_e * a_j_i_l_e_l_f;
+
                     if (prob > bestProb) {
                         bestProb = prob;
                         bestE = e;
                     }
                 }
-                System.out.println(idToWord.get(bestE) + " -> " + idToWord.get(f) + " (p=" + bestProb + ")");
+
+                if (bestE != -1) {
+                    System.out.println(idToWord.get(bestE) + " -> " + idToWord.get(f) + " (p=" + bestProb + ")");
+                }
             }
         }
     }
 
     // Inner classes for sentence pairs and probability entries
     static class SentencePair {
-        Set<String> englishWords;
-        Set<String> foreignWords;
+        List<String> englishWords;
+        List<String> foreignWords;
 
-        SentencePair(Set<String> eng, Set<String> forw) {
+        SentencePair(List<String> eng, List<String> forw) {
             this.englishWords = eng;
             this.foreignWords = forw;
         }
     }
 
     static class IntSentencePair {
-        Set<Integer> englishWords;
-        Set<Integer> foreignWords;
+        List<Integer> englishWords;
+        List<Integer> foreignWords;
 
-        IntSentencePair(Set<Integer> eng, Set<Integer> forw) {
+        IntSentencePair(List<Integer> eng, List<Integer> forw) {
             this.englishWords = eng;
             this.foreignWords = forw;
         }
@@ -279,6 +350,64 @@ public class WordAligner {
         public int compareTo(ProbabilityEntry other) {
             int cmp = this.englishWord.compareTo(other.englishWord);
             return cmp != 0 ? cmp : this.foreignWord.compareTo(other.foreignWord);
+        }
+    }
+
+    /**
+     * Class to handle alignment probabilities a(j|i, l_e, l_f).
+     */
+    static class AlignmentProbabilities {
+        // Key: i_j_l_e_l_f combined as a string (i_j_l_e_l_f)
+        private Map<String, Double> aJifef;
+
+        public AlignmentProbabilities() {
+            aJifef = new HashMap<>();
+        }
+
+        /**
+         * Increment count for a specific alignment.
+         */
+        public void incrementCount(int i, int j, int l_e, int l_f, double value) {
+            String key = generateKey(i, j, l_e, l_f);
+            aJifef.put(key, aJifef.getOrDefault(key, 0.0) + value);
+        }
+
+        /**
+         * Get probability for a specific alignment.
+         */
+        public double getProbability(int i, int j, int l_e, int l_f) {
+            String key = generateKey(i, j, l_e, l_f);
+            return aJifef.getOrDefault(key, 0.0);
+        }
+
+        /**
+         * Normalize the alignment probabilities.
+         */
+        public void normalize() {
+            // Group keys by (i, l_e, l_f) to normalize a(j|i, l_e, l_f)
+            Map<String, Double> sumMap = new HashMap<>();
+            for (String key : aJifef.keySet()) {
+                String[] parts = key.split("_");
+                String groupKey = parts[0] + "_" + parts[2] + "_" + parts[3];
+                sumMap.put(groupKey, sumMap.getOrDefault(groupKey, 0.0) + aJifef.get(key));
+            }
+
+            // Divide each a(j|i, l_e, l_f) by the sum for its group
+            for (String key : aJifef.keySet()) {
+                String[] parts = key.split("_");
+                String groupKey = parts[0] + "_" + parts[2] + "_" + parts[3];
+                double sum = sumMap.get(groupKey);
+                if (sum > 0) {
+                    aJifef.put(key, aJifef.get(key) / sum);
+                }
+            }
+        }
+
+        /**
+         * Generate a unique key based on alignment parameters.
+         */
+        private String generateKey(int i, int j, int l_e, int l_f) {
+            return i + "_" + j + "_" + l_e + "_" + l_f;
         }
     }
 }
