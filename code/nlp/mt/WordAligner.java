@@ -58,10 +58,7 @@ public class WordAligner {
         }
     }
 
-    /**
-     * Step 1: Read sentences and add NULL token to English words for alignment.
-     * Modified to store ordered lists instead of sets.
-     */
+    
     private static List<SentencePair> readSentencesWithNull(String engFile, String forwFile) {
         List<SentencePair> pairs = new ArrayList<>();
         try (BufferedReader engReader = new BufferedReader(new FileReader(engFile));
@@ -83,9 +80,7 @@ public class WordAligner {
         return pairs;
     }
 
-    /**
-     * Step 2: Create a word-to-integer mapping with frequency-based filtering.
-     */
+  
     private static Map<String, Integer> createWordMapping(List<SentencePair> sentencePairs, int minFrequency) {
         Map<String, Integer> wordToId = new HashMap<>();
         Map<String, Integer> wordFrequency = new HashMap<>();
@@ -109,7 +104,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 2: Reverse the word-to-integer mapping for easy lookup when printing.
+    * Reverse the word-to-integer mapping for easy lookup when printing.
      */
     private static Map<Integer, String> reverseMapping(Map<String, Integer> wordToId) {
         Map<Integer, String> idToWord = new HashMap<>();
@@ -119,9 +114,7 @@ public class WordAligner {
         return idToWord;
     }
 
-    /**
-     * Step 3: Convert sentences to integer pairs using the word mapping.
-     */
+ 
     private static List<IntSentencePair> convertToIntegerPairs(List<SentencePair> sentencePairs, Map<String, Integer> wordToId) {
         List<IntSentencePair> intPairs = new ArrayList<>();
 
@@ -146,7 +139,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 4: Initialize p(f|e) with integer mappings.
+     * Initialize p(f|e) with integer mappings.
      */
     private static Map<Integer, Map<Integer, Double>> initializePFWithNull(List<IntSentencePair> sentencePairs) {
         Map<Integer, Set<Integer>> eToF = new HashMap<>();
@@ -172,7 +165,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 5: Initialize a(j|i, l_e, l_f) uniformly.
+     *  Initialize a(j|i, l_e, l_f) uniformly.
      */
     private static AlignmentProbabilities initializeA(List<IntSentencePair> sentencePairs) {
         AlignmentProbabilities aJifef = new AlignmentProbabilities();
@@ -194,7 +187,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 6: Perform EM algorithm for IBM Model 2.
+     *  Perform EM algorithm for IBM Model 2.
      */
     private static Map<Integer, Map<Integer, Double>> performEMModel2(List<IntSentencePair> sentencePairs,
                                                                        Map<Integer, Map<Integer, Double>> pFe,
@@ -259,7 +252,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 7: Print the p(f|e) probability table.
+     * Print the p(f|e) probability table.
      */
     private static void printProbabilityTable(Map<Integer, Map<Integer, Double>> pFe, Map<Integer, String> idToWord, double threshold) {
         List<ProbabilityEntry> outputEntries = new ArrayList<>();
@@ -278,7 +271,7 @@ public class WordAligner {
     }
 
     /**
-     * Step 7: Calculate and print alignments for sentence pairs using IBM Model 2 probabilities.
+     *  Calculate and print alignments for sentence pairs using IBM Model 2 probabilities.
      */
     private static void calculateAlignments(List<IntSentencePair> sentencePairs,
                                            Map<Integer, Map<Integer, Double>> pFe,
